@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Recipe Hub — All Indian Recipes</title>
+  <style>
+    :root{
+      --saffron:#f6a821;
+      --deep-saffron:#e07b17;
+      --leaf:#2e7d32;
+      --cream:#fff7ef;
+      --card:#ffffff;
+      --muted:#666;
+      --glass: rgba(255,255,255,0.78);
+      font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{
+      background: linear-gradient(160deg,var(--cream) 0%, #fff 35%, #fff9f1 65%);
+      min-height:100vh;color:#222;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;
+    }
+    header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:linear-gradient(90deg,var(--saffron),var(--deep-saffron));color:white;box-shadow:0 6px 20px rgba(0,0,0,0.08)}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:20px}
+    .logo{width:48px;height:48px;border-radius:10px;background:linear-gradient(180deg,#fff5e6,#ffe7c2);display:flex;align-items:center;justify-content:center;color:var(--deep-saffron);font-weight:900}
+    .controls{display:flex;gap:12px;align-items:center}
+    .search-wrap{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.95);padding:6px;border-radius:999px}
+    .search-wrap input{border:0;outline:0;padding:8px 12px;font-size:14px;border-radius:999px;background:transparent;width:320px}
+    .btn{padding:8px 12px;border-radius:8px;border:0;cursor:pointer;font-weight:700}
+    .btn-primary{background:var(--leaf);color:white}
+    .btn-accent{background:var(--saffron);color:white}
+
+    .container{display:grid;grid-template-columns:260px 1fr 420px;gap:18px;padding:18px;align-items:start;flex:1}
+    @media(max-width:1100px){.container{grid-template-columns:1fr}.right-col{order:3}.left-col{order:1}.middle-col{order:2}}
+    .card{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 8px 30px rgba(17,24,39,0.06)}
+    .small{font-size:13px;color:var(--muted)}
+    .left-col .filters{display:flex;flex-direction:column;gap:12px}
+    .cuisine-list{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{padding:8px 12px;border-radius:999px;background:var(--glass);cursor:pointer;font-weight:700}
+    .chip.active{background:linear-gradient(90deg,var(--saffron),var(--deep-saffron));color:white}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+    .recipe-card{display:flex;flex-direction:column;border-radius:12px;overflow:hidden;background:linear-gradient(180deg,#fff,#fff);box-shadow:0 10px 22px rgba(0,0,0,0.06);cursor:pointer}
+    .recipe-card img{width:100%;height:140px;object-fit:cover}
+    .rc-body{padding:10px}
+    .meta{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+    .right-col{position:sticky;top:18px;align-self:start}
+    .detail-img{width:100%;height:220px;object-fit:cover;border-radius:8px}
+    h3{margin:8px 0}
+    ul{padding-left:18px}
+    .ingredients li{margin-bottom:6px}
+    .steps li{margin-bottom:10px}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:40}
+    .modal{width:100%;max-width:820px;background:white;border-radius:12px;padding:18px;box-shadow:0 28px 80px rgba(0,0,0,0.35)}
+    .form-row{display:flex;gap:8px}
+    input[type="text"],textarea,select{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e6e6;font-size:14px}
+    label{font-weight:700;font-size:13px}
+    footer{padding:12px;text-align:center;font-size:13px;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .flex{display:flex;gap:8px;align-items:center}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand"><div class="logo">RH</div>Recipe Hub</div>
+    <div class="controls">
+      <div class="search-wrap" title="Search by title, ingredient or cuisine">
+        <input id="searchInput" placeholder="Search by title, ingredient or cuisine..." />
+        <button class="btn btn-accent" id="searchBtn">Search</button>
+      </div>
+      <button class="btn btn-primary" id="addBtn">+ Add Recipe</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <aside class="left-col card">
+      <h4>Filters</h4>
+
+      <div>
+        <div class="small">Quick Type</div>
+        <div style="margin-top:8px" class="flex">
+          <button class="chip" id="filterVeg">Veg</button>
+          <button class="chip" id="filterVegan">Vegan</button>
+          <button class="chip" id="filterNonVeg">Non-Veg</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="small">Cuisine</div>
+        <div class="cuisine-list" id="cuisineList"></div>
+      </div>
+
+      <div>
+        <div class="small">Quick Links</div>
+        <div style="margin-top:8px" class="flex">
+          <button class="chip" id="showAll">Show All</button>
+          <button class="chip" id="showSweets">Sweets</button>
+          <button class="chip" id="showDrinks">Drinks</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="small">Hints</div>
+        <div class="small muted" style="margin-top:6px">
+          Click recipe → open detail. Use + Add Recipe to add. Search and filters persist.
+        </div>
+      </div>
+    </aside>
+
+    <section class="middle-col">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h4 style="margin:0">All Recipes</h4>
+          <div class="small muted" id="countInfo">0 recipes</div>
+        </div>
+        <div class="grid" id="grid"></div>
+      </div>
+    </section>
+
+    <aside class="right-col card" id="details">
+      <div id="noSelection">
+        <h4>Recipe Detail</h4>
+        <p class="small muted">Select a recipe card to view full details, ingredients, steps and add a review.</p>
+      </div>
+
+      <div id="detailContent" style="display:none">
+        <img src="" alt="" class="detail-img" id="detailImg" />
+        <h3 id="detailTitle"></h3>
+        <div class="meta"><div id="detailCuisine"></div><div id="detailTime"></div></div>
+
+        <h4 style="margin-top:12px">Ingredients</h4>
+        <ul class="ingredients" id="detailIngredients"></ul>
+
+        <h4>Steps</h4>
+        <ol class="steps" id="detailSteps"></ol>
+
+        <div style="margin-top:12px;border-top:1px dashed #eee;padding-top:10px">
+          <h4>Reviews</h4>
+          <div id="reviewsList" class="small muted">No reviews yet — be the first!</div>
+
+          <div style="margin-top:8px">
+            <input id="reviewer" placeholder="Your name (optional)" style="padding:8px;border-radius:8px;border:1px solid #eee;width:100%;margin-bottom:6px" />
+            <textarea id="reviewText" placeholder="Write a short review" style="padding:8px;border-radius:8px;border:1px solid #eee;width:100%"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn btn-primary" id="addReviewBtn">Add Review</button>
+              <button class="btn" id="clearReviewsBtn">Clear Reviews</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Modal: Add Recipe -->
+  <div class="modal-backdrop" id="modal">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h3 style="margin:0">Add New Recipe</h3>
+        <button class="btn" id="closeModal">Close</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div>
+          <label>Title</label>
+          <input id="rTitle" placeholder="Recipe title (e.g. Gulab Jamun)" />
+        </div>
+
+        <div class="form-row">
+          <div style="flex:1">
+            <label>Cuisine / Category</label>
+            <select id="rCuisine">
+              <option>Indian Main</option>
+              <option>North Indian</option>
+              <option>South Indian</option>
+              <option>Snacks</option>
+              <option>Sweets</option>
+              <option>Drinks</option>
+              <option>Jain</option>
+              <option>Coastal</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div style="width:160px">
+            <label>Time</label>
+            <input id="rTime" placeholder="e.g. 30 mins" />
+          </div>
+        </div>
+
+        <div>
+          <label>Type</label>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <label style="font-weight:600"><input type="radio" name="type" value="veg" checked> Veg</label>
+            <label style="font-weight:600"><input type="radio" name="type" value="vegan"> Vegan</label>
+            <label style="font-weight:600"><input type="radio" name="type" value="nonveg"> Non-Veg</label>
+          </div>
+        </div>
+
+        <div>
+          <label>Ingredients (comma separated)</label>
+          <textarea id="rIngredients" rows="3" placeholder="eg: milk, sugar, cardamom"></textarea>
+        </div>
+
+        <div>
+          <label>Steps (each step on new line — detailed)</label>
+          <textarea id="rSteps" rows="6" placeholder="Step 1&#10;Step 2&#10;..."></textarea>
+        </div>
+
+        <div>
+          <label>Image URL (optional)</label>
+          <input id="rImage" placeholder="Paste an image URL (optional)" />
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <button class="btn" id="cancelAdd">Cancel</button>
+          <button class="btn btn-primary" id="saveAdd">Save Recipe</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Built with ❤️ — Recipe Hub (demo) — data stored in your browser</footer>
+
+  <script>
+    // STORAGE & UTIL
+    const STORAGE_KEY = 'rh_recipes_final_v1';
+    function readStorage(){ try{ const v = localStorage.getItem(STORAGE_KEY); return v ? JSON.parse(v) : null } catch(e){ return null } }
+    function writeStorage(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+    function genId(){ return 'r_' + Math.random().toString(36).slice(2,9); }
+    function escapeHtml(s){ return String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+    // RICH SAMPLE RECIPES (detailed steps)
+    const sample = [
+      // Indian Main - Veg
+      { id: genId(), title:'Dal Tadka', cuisine:'Indian Main', time:'40 mins', type:'veg',
+        ingredients:['1 cup toor dal','2 tbsp ghee','1 tsp mustard seeds','1 tsp cumin seeds','1 onion, chopped','2 tomatoes, chopped','2-3 green chillies','1/2 tsp turmeric','Salt to taste','Fresh coriander'],
+        steps:[
+          'Wash dal thoroughly. Soak 10-15 minutes for quicker cooking.',
+          'Pressure cook dal with 3 cups water, turmeric and a pinch of salt until soft (3-4 whistles).',
+          'Heat ghee in a pan, add mustard and cumin seeds; let them splutter.',
+          'Add chopped onions and green chillies. Sauté until translucent and golden.',
+          'Add tomatoes and cook until oil separates and tomatoes are soft.',
+          'Pour tempering over cooked dal, mix and simmer 5 minutes. Adjust salt and consistency.',
+          'Garnish with fresh coriander and serve hot with rice or roti.'
+        ],
+        image:'https://images.unsplash.com/photo-1543353071-873f17a7a088?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      { id: genId(), title:'Paneer Butter Masala', cuisine:'Indian Main', time:'45 mins', type:'veg',
+        ingredients:['200g paneer','3 tomatoes','1 onion','2 tbsp butter','2 tbsp cream','1 tsp kasuri methi','1 tsp ginger-garlic paste','Spices: turmeric, red chili, garam masala','Salt'],
+        steps:[
+          'Blend tomatoes and onion into a smooth puree.',
+          'Heat butter, add ginger-garlic paste and sauté until raw smell goes.',
+          'Add tomato-onion puree, spices and cook until oil separates.',
+          'Add cream and simmer to get a rich gravy.',
+          'Add paneer cubes, sprinkle kasuri methi and cook 4-5 minutes so paneer soaks flavour.',
+          'Adjust seasoning; finish with a knob of butter and serve with naan/roti.'
+        ],
+        image:'https://images.unsplash.com/photo-1589302168068-964664d93dc0?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      { id: genId(), title:'Chicken Curry (Home Style)', cuisine:'Indian Main', time:'60 mins', type:'nonveg',
+        ingredients:['1 kg chicken pieces','2 onions','2 tomatoes','1 cup yogurt','2 tbsp ginger-garlic paste','Spices: turmeric, red chili, coriander powder, garam masala','Oil','Salt'],
+        steps:[
+          'Marinate chicken with yogurt, turmeric, salt and half the spice powders for 30 min.',
+          'Heat oil, sauté sliced onions till deep golden; remove some for garnish.',
+          'Add ginger-garlic paste and cook till raw smell disappears.',
+          'Add tomato paste and remaining spices; cook until oil separates.',
+          'Add marinated chicken and cook covered on medium heat until tender (30-35 mins), stirring occasionally.',
+          'Finish with garam masala, simmer 5 minutes. Garnish with fried onions and coriander.'
+        ],
+        image:'https://images.unsplash.com/photo-1608747706817-2f3b6b5a9b7f?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      { id: genId(), title:'Goan Fish Curry', cuisine:'Coastal', time:'40 mins', type:'nonveg',
+        ingredients:['500g fish pieces','1 cup coconut milk','2 tbsp tamarind pulp','2 onions','3 tomatoes','Curry paste (red chilies, coriander, cumin, turmeric)','Salt'],
+        steps:[
+          'Make a spice paste from dry red chilies, coriander, cumin and turmeric with a little water.',
+          'Sauté onions and tomatoes in oil until soft; add spice paste and cook well.',
+          'Add tamarind pulp and some water; bring to simmer.',
+          'Add coconut milk and gently mix; do not boil vigorously after adding coconut milk.',
+          'Add fish pieces, simmer on low heat until fish is cooked through (6-10 mins).',
+          'Adjust salt and sourness; serve with steamed rice.'
+        ],
+        image:'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      { id: genId(), title:'Mutton Rogan Josh', cuisine:'North Indian', time:'140 mins', type:'nonveg',
+        ingredients:['1 kg mutton','1 cup yogurt','2 onions','ginger-garlic paste','Kashmiri red chili powder','Garam masala','Whole spices','Salt'],
+        steps:[
+          'Marinate mutton with yogurt, salt and a little red chili powder for 1 hour.',
+          'Heat oil/ghee, add whole spices and sauté sliced onions till caramelized.',
+          'Add ginger-garlic paste and cook well; then add marinated mutton.',
+          'Stir on high heat to sear meat, then reduce heat and add water; cover and simmer.',
+          'Cook slowly for 1.5-2 hours till mutton is tender, stirring occasionally and adding water if needed.',
+          'Finish with garam masala and coriander; garnish and serve with steamed rice or naan.'
+        ],
+        image:'https://images.unsplash.com/photo-1604908177522-5c4c4b1b3a1e?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      // Snacks
+      { id: genId(), title:'Aloo Tikki', cuisine:'Snacks', time:'30 mins', type:'veg',
+        ingredients:['3-4 boiled potatoes','1/2 cup peas','1 tsp chaat masala','Salt','Oil for shallow frying','Spices'],
+        steps:[
+          'Boil and mash potatoes; mix boiled peas, chaat masala, salt and spices.',
+          'Shape into flat round patties and dust with cornflour for binding.',
+          'Heat oil in pan and shallow fry tikkis until golden and crisp on both sides.',
+          'Serve hot with green chutney, tamarind chutney or curd.',
+          'Optional: top with chopped onion, sev and chaat masala for chaat-style serving.'
+        ],
+        image:'https://images.unsplash.com/photo-1547592180-6f6ea0a0b0b0?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      { id: genId(), title:'Samosa (Crispy)', cuisine:'Snacks', time:'60 mins', type:'veg',
+        ingredients:['For dough: 2 cups flour, oil, salt','For filling: potatoes, peas, spices, green chillies','Oil for deep frying'],
+        steps:[
+          'Make firm dough with flour, oil and water; rest 20 minutes.',
+          'Boil and mash potatoes; sauté with peas and spices to prepare filling.',
+          'Roll dough into cones, stuff filling and seal edges with water.',
+          'Deep fry samosas in hot oil till golden and crisp.',
+          'Drain on paper towel and serve hot with chutneys.'
+        ],
+        image:'https://images.unsplash.com/photo-1551216808-1a3f8b19b0b6?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      { id: genId(), title:'Pani Puri (Gol Gappa)', cuisine:'Snacks', time:'30 mins', type:'veg',
+        ingredients:['Puris','Potato filling','Tamarind chutney','Spicy mint-coriander water','Chaat masala'],
+        steps:[
+          'Prepare spicy mint-coriander water by blending mint, coriander, green chilies, lemon and spices.',
+          'Make potato stuffing with boiled potatoes, chaat masala and salt.',
+          'Crack a small hole into each puri, stuff with potato mix and chutney.',
+          'Dip stuffed puri into chilled pani and eat immediately for best crunch.',
+          'Serve on a plate with extra chutneys and fillings on the side.'
+        ],
+        image:'https://images.unsplash.com/photo-1562059390-a761a084768e?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      { id: genId(), title:'Masala Dosa', cuisine:'South Indian', time:'50 mins', type:'veg',
+        ingredients:['Dosa batter (rice+urad dal)','Potato masala (potatoes, mustard seeds, curry leaves)','Oil','Chutney & sambar'],
+        steps:[
+          'Prepare crisp dosa batter (fermented) or use store-bought batter.',
+          'Boil potatoes and prepare a lightly spiced masala with mustard seeds and curry leaves.',
+          'Heat a dosa tawa, pour batter thinly in circle and spread to make a thin crepe.',
+          'Place potato masala in center and fold dosa; drizzle ghee/oil and cook till crisp.',
+          'Serve hot with coconut chutney and sambar.'
+        ],
+        image:'https://images.unsplash.com/photo-1543352634-1a5c32feda2e?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      // Sweets
+      { id: genId(), title:'Gulab Jamun', cuisine:'Sweets', time:'60 mins', type:'veg',
+        ingredients:['Milk powder/khoya based dough','Maida','Sugar syrup flavored with cardamom and rose','Oil for frying'],
+        steps:[
+          'Prepare smooth dough balls from khoya or milk powder mix; avoid cracks.',
+          'Make light sugar syrup and flavor with cardamom and rose water; keep warm.',
+          'Deep fry dough balls on low-medium heat till golden brown and cooked inside.',
+          'Immediately transfer hot gulab jamuns into warm sugar syrup and soak 1-2 hours.',
+          'Serve warm or at room temperature garnished with pistachio slivers.'
+        ],
+        image:'https://images.unsplash.com/photo-1604898249443-2d1b0f3d0c4b?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      { id: genId(), title:'Jalebi', cuisine:'Sweets', time:'45 mins', type:'veg',
+        ingredients:['Maida','Yogurt for batter','Sugar syrup','Ghee/oil for frying'],
+        steps:[
+          'Prepare a flowing batter with maida and a little yogurt; ferment lightly if possible.',
+          'Heat sugar syrup to one-string consistency and keep warm.',
+          'Pipe batter in circular shapes into hot oil/ghee and fry till crisp.',
+          'Drop fried jalebis into warm sugar syrup for a few seconds and remove.',
+          'Serve hot with rabri or as is.'
+        ],
+        image:'https://images.unsplash.com/photo-1589308078055-5e42f5a9c7b3?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      { id: genId(), title:'Rasgulla', cuisine:'Sweets', time:'60 mins', type:'veg',
+        ingredients:['Chenna (fresh paneer)','Sugar syrup','Rose/cardamom (optional)'],
+        steps:[
+          'Make smooth chenna by curdling milk and squeezing out water; knead till smooth.',
+          'Shape into small balls without cracks.',
+          'Boil balls in light sugar syrup until they double and are spongy.',
+          'Cool and store in syrup; refrigerate or serve chilled.',
+          'Optional: flavor syrup with cardamom or rose for aroma.'
+        ],
+        image:'https://images.unsplash.com/photo-1562158070-6fb9c2f6c56d?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      { id: genId(), title:'Kheer (Rice Pudding)', cuisine:'Sweets', time:'60 mins', type:'veg',
+        ingredients:['1/2 cup basmati rice','1 litre milk','Sugar','Cardamom','Nuts (almond, pistachio)'],
+        steps:[
+          'Wash rice and lightly roast if desired for extra aroma.',
+          'Boil milk in a heavy bottom pan; add rice and cook on low heat, stirring to avoid sticking.',
+          'When rice is soft and milk thickens, add sugar and cardamom.',
+          'Cook until desired consistency; add chopped nuts and simmer 2-3 minutes.',
+          'Serve warm or chilled garnished with saffron and nuts.'
+        ],
+        image:'https://images.unsplash.com/photo-1604908177522-5c4c4b1b3a1e?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      // Drinks
+      { id: genId(), title:'Mango Lassi', cuisine:'Drinks', time:'10 mins', type:'veg',
+        ingredients:['Ripe mango pulp','Yogurt','Sugar or honey','Cardamom powder','Ice cubes'],
+        steps:[
+          'Blend mango pulp and yogurt until smooth.',
+          'Add sugar/honey and a pinch of cardamom; blend with ice.',
+          'Adjust sweetness and consistency with milk or water.',
+          'Serve chilled garnished with a pinch of cardamom or saffron strands.'
+        ],
+        image:'https://images.unsplash.com/photo-1572448862528-3d5b0a7bd8a7?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      { id: genId(), title:'Masala Chai', cuisine:'Drinks', time:'15 mins', type:'veg',
+        ingredients:['Tea leaves','Milk','Water','Sugar','Spices: cardamom, ginger, cloves, cinnamon'],
+        steps:[
+          'Crush spices lightly and boil in water to extract flavor.',
+          'Add tea leaves and simmer a minute.',
+          'Add milk and sugar; simmer until desired color and strength.',
+          'Strain and serve hot in cups.'
+        ],
+        image:'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      { id: genId(), title:'Sugarcane Juice', cuisine:'Drinks', time:'10 mins', type:'vegan',
+        ingredients:['Fresh sugarcane','Lemon','Black salt','Ice (optional)'],
+        steps:[
+          'Extract fresh sugarcane juice using a juicer (fresh and chilled).',
+          'Mix in a squeeze of lemon and a pinch of black salt or chaat masala.',
+          'Serve immediately over ice for a refreshing drink.'
+        ],
+        image:'https://images.unsplash.com/photo-1542445810-70f7f1b0f5a6?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      { id: genId(), title:'Coconut Water (Fresh)', cuisine:'Drinks', time:'5 mins', type:'vegan',
+        ingredients:['Fresh coconut','Optional: lemon or mint'],
+        steps:[
+          'Crack open fresh tender coconut and strain the water.',
+          'Add a squeeze of lemon or few mint leaves for flavor if desired.',
+          'Serve chilled in a glass.'
+        ],
+        image:'https://images.unsplash.com/photo-1505576391880-648ad1f0d5b1?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      // Jain / Fasting / Vegan
+      { id: genId(), title:'Jain Style Sabzi (Batata nu shaak)', cuisine:'Jain', time:'30 mins', type:'veg',
+        ingredients:['Potato','Peanut/khus khus paste','Turmeric','Cumin seeds','Salt','Ghee'],
+        steps:[
+          'Boil and dice potatoes.',
+          'Tempering: heat ghee, add cumin and curry leaves (if used), saute.',
+          'Add turmeric and potatoes, mix well and cook 5-7 minutes.',
+          'Prepare a peanut/khus khus paste to thicken and add for richness (optional for Jain preference).',
+          'Cook until flavours blend; adjust salt and serve with rotla or rice.'
+        ],
+        image:'https://images.unsplash.com/photo-1579088003013-1b971c626f5a?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      { id: genId(), title:'Vegan Chana Masala', cuisine:'Indian Main', time:'40 mins', type:'vegan',
+        ingredients:['Chickpeas','Onion','Tomato','Ginger-garlic','Spices: garam masala, coriander powder','Salt'],
+        steps:[
+          'Soak (if dry) and cook chickpeas until soft or use canned chickpeas; keep aside.',
+          'Prepare onion-tomato gravy with sautéed onions, tomato and spices.',
+          'Add chickpeas and simmer allowing chickpeas to soak up gravy flavors.',
+          'Adjust spice levels and add lemon for a bright finish.',
+          'Garnish with coriander and serve with rice or bhature.'
+        ],
+        image:'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&w=1000&q=60', reviews:[] },
+
+      // extra: light dessert drink
+      { id: genId(), title:'Thandai (Fasting/ Festival)', cuisine:'Drinks', time:'20 mins', type:'veg',
+        ingredients:['Milk','Thandai masala (almonds, fennel, poppy seeds, cardamom)','Sugar','Saffron'],
+        steps:[
+          'Prepare thandai paste by grinding nuts and seeds with a little water.',
+          'Mix paste into cold milk, add sugar and saffron; chill.',
+          'Serve cold with crushed nuts on top.'
+        ],
+        image:'https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=1000&q=60', reviews:[] }
+    ];
+
+    // STATE
+    let recipes = readStorage() || sample;
+    if(!readStorage()) writeStorage(recipes);
+
+    let selectedId = null;
+    let activeCuisine = null; // null = all
+    let activeType = null; // 'veg' | 'vegan' | 'nonveg' or null
+
+    // ELEMENTS
+    const grid = document.getElementById('grid');
+    const countInfo = document.getElementById('countInfo');
+    const cuisineList = document.getElementById('cuisineList');
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const addBtn = document.getElementById('addBtn');
+    const modal = document.getElementById('modal');
+    const closeModal = document.getElementById('closeModal');
+    const saveAdd = document.getElementById('saveAdd');
+    const cancelAdd = document.getElementById('cancelAdd');
+
+    const detailContent = document.getElementById('detailContent');
+    const noSelection = document.getElementById('noSelection');
+    const detailImg = document.getElementById('detailImg');
+    const detailTitle = document.getElementById('detailTitle');
+    const detailCuisine = document.getElementById('detailCuisine');
+    const detailTime = document.getElementById('detailTime');
+    const detailIngredients = document.getElementById('detailIngredients');
+    const detailSteps = document.getElementById('detailSteps');
+    const reviewsList = document.getElementById('reviewsList');
+    const addReviewBtn = document.getElementById('addReviewBtn');
+    const clearReviewsBtn = document.getElementById('clearReviewsBtn');
+
+    const rTitle = document.getElementById('rTitle');
+    const rCuisine = document.getElementById('rCuisine');
+    const rTime = document.getElementById('rTime');
+    const rIngredients = document.getElementById('rIngredients');
+    const rSteps = document.getElementById('rSteps');
+    const rImage = document.getElementById('rImage');
+
+    const reviewer = document.getElementById('reviewer');
+    const reviewText = document.getElementById('reviewText');
+
+    const filterVegBtn = document.getElementById('filterVeg');
+    const filterVeganBtn = document.getElementById('filterVegan');
+    const filterNonVegBtn = document.getElementById('filterNonVeg');
+
+    const showAllBtn = document.getElementById('showAll');
+    const showSweetsBtn = document.getElementById('showSweets');
+    const showDrinksBtn = document.getElementById('showDrinks');
+
+    // INIT
+    renderCuisineChips();
+    applyFilters(); // initial render
+
+    // EVENTS
+    searchBtn.addEventListener('click', applyFilters);
+    searchInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') applyFilters(); });
+
+    addBtn.addEventListener('click', openModal);
+    closeModal.addEventListener('click', closeModalFn);
+    cancelAdd.addEventListener('click', closeModalFn);
+    saveAdd.addEventListener('click', saveRecipeFromModal);
+
+    filterVegBtn.addEventListener('click', ()=>{ toggleType('veg'); });
+    filterVeganBtn.addEventListener('click', ()=>{ toggleType('vegan'); });
+    filterNonVegBtn.addEventListener('click', ()=>{ toggleType('nonveg'); });
+
+    addReviewBtn.addEventListener('click', addReviewToSelected);
+    clearReviewsBtn.addEventListener('click', ()=>{
+      if(!selectedId) return alert('Select a recipe first');
+      const r = recipes.find(x=>x.id === selectedId);
+      if(!r) return;
+      r.reviews = [];
+      saveAndRerender();
+      showDetail(r.id);
+    });
+
+    showAllBtn.addEventListener('click', ()=>{ activeCuisine = null; document.querySelectorAll('#cuisineList .chip').forEach(x=>x.classList.remove('active')); document.querySelector('#cuisineList .chip')?.classList.add('active'); applyFilters(); });
+    showSweetsBtn.addEventListener('click', ()=>{ activeCuisine = 'Sweets'; document.querySelectorAll('#cuisineList .chip').forEach(x=>x.classList.remove('active')); Array.from(document.querySelectorAll('#cuisineList .chip')).find(x=>x.textContent==='Sweets')?.classList.add('active'); applyFilters(); });
+    showDrinksBtn.addEventListener('click', ()=>{ activeCuisine = 'Drinks'; document.querySelectorAll('#cuisineList .chip').forEach(x=>x.classList.remove('active')); Array.from(document.querySelectorAll('#cuisineList .chip')).find(x=>x.textContent==='Drinks')?.classList.add('active'); applyFilters(); });
+
+    // FUNCTIONS
+    function renderCuisineChips(){
+      const set = new Set(recipes.map(r=>r.cuisine || 'Other'));
+      // ensure common categories exist
+      ['Indian Main','North Indian','South Indian','Snacks','Sweets','Drinks','Jain','Coastal','Other'].forEach(c=>set.add(c));
+      const arr = ['All', ...Array.from(set).sort()];
+      cuisineList.innerHTML = '';
+      arr.forEach((c, idx) => {
+        const d = document.createElement('div');
+        d.textContent = c;
+        d.className = 'chip' + (idx === 0 ? ' active' : '');
+        d.style.fontWeight = '700';
+        d.addEventListener('click', ()=>{
+          document.querySelectorAll('#cuisineList .chip').forEach(x=>x.classList.remove('active'));
+          d.classList.add('active');
+          activeCuisine = (c === 'All') ? null : c;
+          applyFilters();
+        });
+        cuisineList.appendChild(d);
+      });
+    }
+
+    function renderGrid(list){
+      grid.innerHTML = '';
+      if(!Array.isArray(list)) list = [];
+      list.forEach(r => {
+        const card = document.createElement('div');
+        card.className = 'recipe-card';
+        card.onclick = ()=>{ showDetail(r.id); };
+        const img = document.createElement('img');
+        img.src = r.image || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=60';
+        img.alt = r.title;
+        const body = document.createElement('div');
+        body.className = 'rc-body';
+        const title = document.createElement('div');
+        title.style.fontWeight = '800';
+        title.textContent = r.title;
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.innerHTML = `<div style="font-weight:700">${escapeHtml(r.cuisine || '')}</div><div class="small">${escapeHtml(r.time || '')}</div>`;
+        body.appendChild(title);
+        body.appendChild(meta);
+        card.appendChild(img);
+        card.appendChild(body);
+        grid.appendChild(card);
+      });
+      countInfo.textContent = (list.length || 0) + ' recipes';
+    }
+
+    function showDetail(id){
+      selectedId = id;
+      const r = recipes.find(x=>x.id === id);
+      if(!r) return;
+      noSelection.style.display = 'none';
+      detailContent.style.display = 'block';
+      detailImg.src = r.image || '';
+      detailTitle.textContent = r.title;
+      detailCuisine.textContent = (r.cuisine || '') + (r.type ? ` • ${r.type.toUpperCase()}` : '');
+      detailTime.textContent = r.time || '';
+      detailIngredients.innerHTML = (r.ingredients || []).map(i=>`<li>${escapeHtml(i)}</li>`).join('');
+      detailSteps.innerHTML = (r.steps || []).map(s=>`<li>${escapeHtml(s)}</li>`).join('');
+      renderReviews(r.reviews || []);
+    }
+
+    function renderReviews(list){
+      if(!list || list.length === 0){
+        reviewsList.innerHTML = '<div class="small muted">No reviews yet — be the first!</div>';
+        return;
+      }
+      reviewsList.innerHTML = list.map(rv => `<div style="margin-bottom:8px"><strong>${escapeHtml(rv.name)}</strong><div class="small muted">${escapeHtml(rv.when)}</div><div>${escapeHtml(rv.text)}</div></div>`).join('');
+    }
+
+    function openModal(){ modal.style.display = 'flex'; rTitle.focus(); }
+    function closeModalFn(){ modal.style.display = 'none'; clearModal(); }
+    function clearModal(){
+      rTitle.value = ''; rCuisine.value = 'Indian Main'; rTime.value = '30 mins';
+      rIngredients.value = ''; rSteps.value = ''; rImage.value = '';
+      const radios = document.getElementsByName('type'); if(radios && radios[0]) radios[0].checked = true;
+    }
+
+    function saveRecipeFromModal(){
+      const title = (rTitle.value || '').trim();
+      if(!title) return alert('Please add a title');
+      const cuisine = (rCuisine.value || 'Other').trim();
+      const time = (rTime.value || '30 mins').trim();
+      const ingredients = (rIngredients.value || '').split(',').map(s=>s.trim()).filter(Boolean);
+      const steps = (rSteps.value || '').split(/\n/).map(s=>s.trim()).filter(Boolean);
+      const image = (rImage.value || '').trim();
+      const type = (() => { const checked = document.querySelector('input[name="type"]:checked'); return checked ? checked.value : 'veg'; })();
+
+      const rec = { id: genId(), title, cuisine, time, type, ingredients, steps, image, reviews: [] };
+      recipes.unshift(rec);
+      writeStorage(recipes);
+      renderCuisineChips();
+      applyFilters();
+      closeModalFn();
+      showDetail(rec.id);
+    }
+
+    function applyFilters(){
+      const q = (searchInput.value || '').toLowerCase().trim();
+      let filtered = recipes.filter(r => {
+        if(activeCuisine && r.cuisine !== activeCuisine) return false;
+        if(activeType && r.type !== activeType) return false;
+        if(!q) return true;
+        const inTitle = (r.title || '').toLowerCase().includes(q);
+        const inCuisine = (r.cuisine || '').toLowerCase().includes(q);
+        const inIngredients = (r.ingredients || []).join(' ').toLowerCase().includes(q);
+        return inTitle || inCuisine || inIngredients;
+      });
+      renderGrid(filtered);
+    }
+
+    // Type toggle: mutually exclusive
+    function toggleType(type){
+      if(activeType === type) activeType = null;
+      else activeType = type;
+      [ ['veg', filterVegBtn], ['vegan', filterVeganBtn], ['nonveg', filterNonVegBtn] ].forEach(([t,btn])=>{
+        if(activeType === t) btn.classList.add('active'); else btn.classList.remove('active');
+      });
+      applyFilters();
+    }
+
+    function addReviewToSelected(){
+      if(!selectedId) return alert('Select a recipe first');
+      const name = (document.getElementById('reviewer').value || 'Guest').trim();
+      const text = (document.getElementById('reviewText').value || '').trim();
+      if(!text) return alert('Please write a short review');
+      const r = recipes.find(x => x.id === selectedId);
+      if(!r) return;
+      r.reviews = r.reviews || [];
+      r.reviews.unshift({ name, text, when: new Date().toLocaleString() });
+      saveAndRerender();
+      renderReviews(r.reviews);
+      document.getElementById('reviewer').value = '';
+      document.getElementById('reviewText').value = '';
+    }
+
+    function saveAndRerender(){
+      writeStorage(recipes);
+      renderCuisineChips();
+      applyFilters();
+    }
+
+    // close modal when clicking backdrop
+    modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModalFn(); });
+    // Esc closes modal
+    document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && modal.style.display === 'flex') closeModalFn(); });
+
+    // initial: show first recipe
+    if(recipes.length) { showDetail(recipes[0].id); }
+
+  </script>
+</body>
+</html>
